@@ -1,0 +1,179 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Enums ----------
+
+enum FamilyRole {
+  OWNER
+  ADMIN
+  CONTRIBUTOR
+  VIEWER
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  UNKNOWN
+}
+
+enum RelationshipType {
+  PARENT // fromPerson is parent of toPerson (biological)
+  ADOPTED_PARENT // fromPerson is adoptive parent of toPerson
+  FOSTER_PARENT // fromPerson is foster parent of toPerson
+  SPOUSE // fromPerson is spouse of toPerson
+}
+
+enum ActivityAction {
+  FAMILY_CREATED
+  FAMILY_UPDATED
+  MEMBER_JOINED
+  MEMBER_ROLE_CHANGED
+  MEMBER_REMOVED
+  PERSON_ADDED
+  PERSON_UPDATED
+  PERSON_DELETED
+  PERSON_RESTORED
+  RELATIONSHIP_ADDED
+  RELATIONSHIP_REMOVED
+}
+
+// ---------- Models ----------
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  displayName  String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  memberships   FamilyMember[]
+  refreshTokens RefreshToken[]
+  activities    ActivityLog[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  tokenHash String   @unique
+  userId    String
+  expiresAt DateTime
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model Family {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  photoUrl    String?
+  inviteCode  String   @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  members       FamilyMember[]
+  persons       Person[]
+  relationships Relationship[]
+  activities    ActivityLog[]
+
+  @@map("families")
+}
+
+model FamilyMember {
+  id       String     @id @default(uuid())
+  familyId String
+  userId   String
+  role     FamilyRole @default(CONTRIBUTOR)
+  joinedAt DateTime   @default(now())
+
+  family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([familyId, userId])
+  @@index([userId])
+  @@map("family_members")
+}
+
+model Person {
+  id              String    @id @default(uuid())
+  familyId        String
+  firstName       String
+  lastName        String
+  middleName      String?
+  nickname        String?
+  gender          Gender    @default(UNKNOWN)
+  dateOfBirth     DateTime?
+  dateOfDeath     DateTime?
+  isLiving        Boolean   @default(true)
+  profilePhotoUrl String?
+  birthPlace      String?
+  currentLocation String?
+  occupation      String?
+  education       String?
+  biography       String?
+  phone           String?
+  email           String?
+  anniversary     DateTime?
+  religion        String?
+  bloodGroup      String?
+  createdById     String?
+  updatedById     String?
+  deletedAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  family            Family         @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  relationshipsFrom Relationship[] @relation("FromPerson")
+  relationshipsTo   Relationship[] @relation("ToPerson")
+
+  @@index([familyId])
+  @@index([familyId, lastName, firstName])
+  @@map("persons")
+}
+
+model Relationship {
+  id           String           @id @default(uuid())
+  familyId     String
+  type         RelationshipType
+  fromPersonId String // parent (for *_PARENT types) or first spouse
+  toPersonId   String // child (for *_PARENT types) or second spouse
+  createdById  String?
+  createdAt    DateTime         @default(now())
+
+  family     Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  fromPerson Person @relation("FromPerson", fields: [fromPersonId], references: [id], onDelete: Cascade)
+  toPerson   Person @relation("ToPerson", fields: [toPersonId], references: [id], onDelete: Cascade)
+
+  @@unique([familyId, type, fromPersonId, toPersonId])
+  @@index([familyId])
+  @@map("relationships")
+}
+
+model ActivityLog {
+  id        String         @id @default(uuid())
+  familyId  String
+  userId    String?
+  action    ActivityAction
+  summary   String // human readable, e.g. "Ravi added Grandfather"
+  meta      Json?
+  createdAt DateTime       @default(now())
+
+  family Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  user   User?  @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([familyId, createdAt])
+  @@map("activity_logs")
+}
