@@ -94,9 +94,21 @@ class ApiClient {
 
     throw ApiException(
       res.statusCode,
-      json['error']?.toString() ?? 'Something went wrong. Please try again.',
+      _errorMessage(json),
       json,
     );
+  }
+
+  String _errorMessage(Map<String, dynamic> json) {
+    final details = json['details'];
+    if (details is List && details.isNotEmpty) {
+      final messages = details
+          .map((d) => d is Map ? d['message']?.toString() : null)
+          .whereType<String>()
+          .toList();
+      if (messages.isNotEmpty) return messages.join('\n');
+    }
+    return json['error']?.toString() ?? 'Something went wrong. Please try again.';
   }
 
   Future<bool> _tryRefresh() async {

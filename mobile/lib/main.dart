@@ -54,6 +54,20 @@ class _Root extends StatelessWidget {
         ),
       );
     }
-    return state.isLoggedIn ? const FamiliesScreen() : const LoginScreen();
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 400),
+      switchInCurve: Curves.easeOutCubic,
+      switchOutCurve: Curves.easeInCubic,
+      transitionBuilder: (child, animation) => FadeTransition(
+        opacity: animation,
+        child: ScaleTransition(
+          scale: Tween<double>(begin: 0.98, end: 1).animate(animation),
+          child: child,
+        ),
+      ),
+      child: state.isLoggedIn
+          ? const FamiliesScreen(key: ValueKey('families'))
+          : const LoginScreen(key: ValueKey('login')),
+    );
   }
 }

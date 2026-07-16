@@ -39,6 +39,19 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> forgotPassword(String email) async {
+    await api.post('/api/auth/forgot-password', {'email': email});
+  }
+
+  Future<void> resetPassword(
+      String email, String code, String newPassword) async {
+    await api.post('/api/auth/reset-password', {
+      'email': email,
+      'code': code,
+      'newPassword': newPassword,
+    });
+  }
+
   Future<void> login(String email, String password) async {
     final res = await api.post('/api/auth/login', {
       'email': email,

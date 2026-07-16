@@ -7,3 +7,4 @@ build/
 .idea/
 android/.gradle/
 ios/Pods/
+build.md

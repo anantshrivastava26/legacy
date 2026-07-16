@@ -5,4 +5,7 @@ export const config = {
   accessTokenTtl: process.env.ACCESS_TOKEN_TTL || '15m',
   refreshTokenTtlDays: parseInt(process.env.REFRESH_TOKEN_TTL_DAYS || '30', 10),
   corsOrigin: process.env.CORS_ORIGIN || '*',
+  gmailUser: process.env.GMAIL_USER || '',
+  gmailAppPassword: process.env.GMAIL_APP_PASSWORD || '',
+  resetCodeTtlMinutes: parseInt(process.env.RESET_CODE_TTL_MINUTES || '15', 10),
 };
